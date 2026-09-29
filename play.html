@@ -2,7 +2,7 @@
 <html lang="zh-CN" class="dark h-full">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>月缘 MOON WHISPERS - Mobile Terminal</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,19 +27,26 @@
   </script>
 
   <style>
-    body { background-color: #02040a; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; }
-    .scanner-lens { cursor: crosshair; background: radial-gradient(circle 70px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(251, 191, 36, 0.2) 0%, rgba(3, 7, 18, 0.95) 100%); }
+    body { background-color: #02040a; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .scanner-lens { cursor: crosshair; background: radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(251, 191, 36, 0.25) 0%, rgba(3, 7, 18, 0.98) 100%); }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 4px; }
   </style>
 </head>
-<body class="h-full min-h-screen flex items-center justify-center bg-midnight text-slate-100 p-2">
+<body class="h-full min-h-screen flex items-center justify-center bg-midnight text-slate-100 p-0 sm:p-4">
 
-  <main id="app-viewport" class="w-full max-w-[390px] h-[780px] bg-slate-950 border-4 border-slate-800 rounded-[40px] shadow-2xl flex flex-col justify-between overflow-hidden relative font-sans"></main>
+  <main id="app-viewport" class="w-full max-w-[420px] h-screen sm:h-[820px] bg-slate-950 sm:border-4 sm:border-slate-800 sm:rounded-[40px] shadow-2xl flex flex-col justify-between overflow-hidden relative font-sans">
+    <!-- Dynamic Content Rendered Here -->
+  </main>
 
   <script>
+    // 💡 Replace with your deployed Google Apps Script Web App URL if using Google Sheets backend
+    const SCRIPT_URL = ""; 
+
     const CASE_DATA = [
-      { id: 1, code: "CASE-01", title: "宣传失陷", dept: "宣传组", question: "宣传出了问题。你认为应该先调查谁？", options: [{ id: "A", label: "Marketing 市场策划组" }, { id: "B", label: "宣传组 (Visual Storytellers)" }, { id: "C", label: "编辑组 (Editorial)" }, { id: "D", label: "技术组 (Technical)" }], clueSnippet: "【加密文案】海报原文件已被篡改！修改痕迹指向 Visual Department 账号权限！" },
+      { id: 1, code: "CASE-01", title: "宣传失陷", dept: "宣传组", question: "宣传出了问题。你认为应该先调查谁？", options: [{ id: "A", label: "Marketing 市场策划组" }, { id: "B", label: "宣传组 (Visual Storytellers)" }, { id: "C", label: "编辑组 (Editorial)" }, { id: "D", label: "技术组 (Technical)" }], clueSnippet: "【加密线索】海报原文件已被篡改！修改痕迹指向 Visual Department 账号权限！" },
       { id: 2, code: "CASE-02", title: "特刊谜团", dept: "编辑组", question: "哪一项核心职责最可能属于这个部门？", options: [{ id: "A", label: "嘉宾接待与座位摆放" }, { id: "B", label: "特刊撰写与故事留存" }, { id: "C", label: "音响设备与舞台灯光" }, { id: "D", label: "节目演出与流程编排" }], clueSnippet: "【特刊日志】“每一段文字，都是把月光镌刻在纸上的艺术。”" },
-      { id: 3, code: "CASE-03", title: "礼仪危机", dept: "礼仪组", question: "面对嘉宾接待与座位紧急安排，谁来接管现场？", options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组 (Guest Relations)" }, { id: "C", label: "技术组" }, { id: "D", label: "Marketing" }], clueSnippet: "【礼仪手册】VIP 席位 01-12 已全数安排，礼仪接待人员到位率 100%。" },
+      { id: 3, code: "CASE-03", title: "礼仪危机", dept: "礼仪组", question: "面对嘉宾接待与座位紧急安排，谁来接管现场？", options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组 (Guest Relations)" }, { id: "C", label: "技术组" }, { id: "D", label: "Marketing" }], clueSnippet: "【礼仪手册】VIP 席位已全数安排，礼仪接待人员到位率 100%。" },
       { id: 4, code: "CASE-04", title: "信号中断", dept: "技术组", question: "舞台音响与大屏系统全面失灵，需要手动调频修复！", options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组" }, { id: "C", label: "技术组 (Technical Engineering)" }, { id: "D", label: "编辑组" }], clueSnippet: "【技术告警】音频采样率丢失！调频目标：440 Hz 同步。", isMiniGame: true },
       { id: 5, code: "CASE-05", title: "节奏脫轨", dept: "节目组", question: "谁来掌握舞台上这掌控一切的节奏与灵魂？", options: [{ id: "A", label: "宣传组" }, { id: "B", label: "节目组 (Performance & Stage)" }, { id: "C", label: "分校与展览品组" }, { id: "D", label: "礼仪组" }], clueSnippet: "【节目单】开场舞《月之声》倒计时 30 秒，舞台灯光组就位！" },
       { id: 6, code: "CASE-06", title: "分校迷局", dept: "分校与展览品组", question: "谁负责跨校区协调与文化展览品的完美呈现？", options: [{ id: "A", label: "分校与展览品组" }, { id: "B", label: "编辑组" }, { id: "C", label: "Marketing" }, { id: "D", label: "技术组" }], clueSnippet: "【展品清单】灯笼艺术雕塑与分校巡展专列已顺利发车。" },
@@ -50,22 +57,47 @@
       constructor() {
         this.channel = new BroadcastChannel('moon_whispers_channel_v2');
         this.state = this.loadState();
+        
         this.channel.onmessage = (event) => {
           if (event.data && event.data.type === 'STATE_UPDATE') {
             this.state = event.data.payload;
             renderParticipantView();
           }
         };
+
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'moon_whispers_state_v2') {
+            this.state = JSON.parse(e.newValue);
+            renderParticipantView();
+          }
+        });
       }
+
       loadState() {
         const saved = localStorage.getItem('moon_whispers_state_v2');
         if (saved) try { return JSON.parse(saved); } catch(e) {}
-        return { eventStatus: 'WAITING', currentCaseIndex: 0, votes: {}, investigatorId: "INV-" + Math.floor(1000 + Math.random() * 9000), myVote: null };
+        return { 
+          eventStatus: 'WAITING', 
+          currentCaseIndex: 0, 
+          votes: { A: 0, B: 0, C: 0, D: 0 }, 
+          investigatorId: "INV-" + Math.floor(1000 + Math.random() * 9000), 
+          myVote: null,
+          signalFrequencyTuned: false
+        };
       }
+
       update(updater) {
         updater(this.state);
         localStorage.setItem('moon_whispers_state_v2', JSON.stringify(this.state));
         this.channel.postMessage({ type: 'STATE_UPDATE', payload: this.state });
+        
+        // Optional Google Sheets backend synchronization if SCRIPT_URL is provided
+        if (SCRIPT_URL) {
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'updateState', state: this.state })
+          }).catch(err => console.log("Sync warning:", err));
+        }
         renderParticipantView();
       }
     }
@@ -76,6 +108,7 @@
     function setMobileTab(tab) {
       mobileTab = tab;
       renderParticipantView();
+      gsap.from("#tab-content-container", { opacity: 0, y: 10, duration: 0.3 });
     }
 
     function submitParticipantVote(optionId) {
@@ -83,81 +116,128 @@
         s.myVote = optionId;
         s.votes[optionId] = (s.votes[optionId] || 0) + 1;
       });
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+      }
     }
 
     function handleFrequencySlider(val) {
       if (Math.abs(val - 440) < 15) {
         store.update(s => { s.signalFrequencyTuned = true; });
+        if (typeof confetti === 'function') confetti({ particleCount: 50, spread: 60 });
       }
+    }
+
+    function submitRecruitmentForm(e) {
+      e.preventDefault();
+      const name = document.getElementById('rec-name').value;
+      const dept = document.getElementById('rec-dept').value;
+      alert(`感谢报名！${name} 同学，您的资料已成功提交至【${dept}】筹委审核！`);
     }
 
     function renderParticipantView() {
       const state = store.state;
-      const currentCase = CASE_DATA[state.currentCaseIndex];
+      const currentCase = CASE_DATA[state.currentCaseIndex] || CASE_DATA[0];
       const viewport = document.getElementById('app-viewport');
+
+      let mainBodyContent = '';
+
+      if (state.eventStatus === 'RECRUITMENT' || mobileTab === 'RECRUIT') {
+        mainBodyContent = `
+          <div class="space-y-4 font-sans animate-fade-in pb-6">
+            <div class="bg-gradient-to-br from-amber-500/20 to-cyan-500/20 p-5 rounded-3xl border border-moonGold/40 text-center space-y-2">
+              <span class="px-3 py-1 bg-moonGold/20 text-moonGold font-mono text-[10px] rounded-full border border-moonGold/30">UKM PT KE-47 RECRUITMENT</span>
+            </div>
+            <form onsubmit="submitRecruitmentForm(event)" class="space-y-3 bg-slate-900/80 p-5 rounded-3xl border border-slate-800">
+              <div>
+                <label class="block text-[11px] font-mono text-slate-400 mb-1">您的姓名 / Name</label>
+                <input type="text" id="rec-name" required placeholder="请输入全名" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-moonGold outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-slate-400 mb-1">意向部门 / Department</label>
+                <select id="rec-dept" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:border-moonGold outline-none">
+                  <option>宣传组 (Visual Storytellers)</option>
+                  <option>编辑组 (Editorial)</option>
+                  <option>礼仪组 (Protocol)</option>
+                  <option>技术组 (Technical Engineering)</option>
+                  <option>节目组 (Performance & Stage)</option>
+                  <option>分校与展览品组 (Exhibitions)</option>
+                  <option>Marketing 市场与品牌组</option>
+                </select>
+              </div>
+              <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-moonGold text-midnight font-bold text-sm tracking-wider shadow-lg active:scale-95 transition">
+                立即提交报名申请
+              </button>
+            </form>
+          </div>
+        `;
+      } else if (mobileTab === 'CLUES') {
+        mainBodyContent = `
+          <div class="space-y-3 font-sans">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h4 class="font-mono text-xs text-slate-400 uppercase tracking-widest">EVIDENCE SCANNER LENS</h4>
+              <span class="text-[10px] font-mono text-moonGold">DRAG OVER TEXT</span>
+            </div>
+            <div class="p-4 bg-slate-900 rounded-3xl border border-slate-800 space-y-3 shadow-inner">
+              <div class="p-5 bg-slate-950 rounded-2xl border border-slate-800 scanner-lens relative overflow-hidden h-40 flex items-center justify-center text-center shadow-lg" onmousemove="updateScannerLens(event, this)" ontouchmove="updateScannerLensTouch(event, this)">
+                <p class="text-xs font-mono text-slate-300 leading-relaxed">${currentCase.clueSnippet}</p>
+              </div>
+              <p class="text-[11px] text-slate-500 text-center font-mono">提示：在框内滑动手指或鼠标以激活手电筒透镜查看加密信息。</p>
+            </div>
+          </div>
+        `;
+      } else if (state.currentCaseIndex === 3 && currentCase.isMiniGame && mobileTab === 'CASE') {
+        mainBodyContent = `
+          <div class="space-y-4 font-sans py-2">
+            <div class="bg-red-950/60 p-4 rounded-3xl border border-red-800 text-center space-y-2">
+              <span class="px-2.5 py-0.5 bg-red-900 text-red-300 rounded font-mono text-[10px]">MINIGAME PROTOCOL</span>
+              <h3 class="font-bold text-red-300 text-base">【技术组】信号频段失控！</h3>
+              <p class="text-xs text-slate-300">滑动下方滑块，将频率调谐至 <strong class="text-moonGold font-mono text-sm">440 Hz</strong> 以修复大屏信号！</p>
+            </div>
+            <div class="p-5 bg-slate-900 rounded-3xl border border-slate-800 space-y-4 text-center">
+              <input type="range" min="100" max="800" value="200" class="w-full accent-moonGold cursor-pointer py-2" oninput="handleFrequencySlider(this.value)">
+              ${state.signalFrequencyTuned ? `<div class="p-3 bg-emerald-950/80 border border-emerald-800 text-emerald-300 font-mono text-xs rounded-xl animate-bounce">✓ 频段匹配成功！系统已恢复。</div>` : `<span class="text-xs font-mono text-slate-500">当前频段未对齐</span>`}
+            </div>
+          </div>
+        `;
+      } else {
+        mainBodyContent = `
+          <div class="space-y-4 font-sans">
+            <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800 space-y-2 shadow-lg">
+              <span class="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-900">${currentCase.code} // ${currentCase.dept}</span>
+              <h3 class="font-serif-sc font-bold text-base text-slate-100 leading-snug">${currentCase.question}</h3>
+            </div>
+            <div class="space-y-2.5">
+              ${currentCase.options.map(opt => `
+                <button onclick="submitParticipantVote('${opt.id}')" class="w-full p-4 rounded-2xl border text-left flex items-center justify-between transition active:scale-[0.98] ${state.myVote === opt.id ? 'bg-gradient-to-r from-amber-500 to-moonGold text-midnight font-bold border-amber-300 shadow-lg shadow-amber-500/20' : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700'}">
+                  <span class="text-sm"><strong>${opt.id}.</strong> ${opt.label}</span>${state.myVote === opt.id ? '<i class="fa-solid fa-circle-check text-base"></i>' : ''}
+                </button>
+              `).join('')}
+            </div>
+            ${state.myVote ? `<div class="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 text-center font-mono text-xs text-emerald-400"><i class="fa-solid fa-check mr-1"></i> 已记录您的选择: 选项 [${state.myVote}]</div>` : ''}
+          </div>
+        `;
+      }
 
       viewport.innerHTML = `
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-xl z-50"></div>
         <div class="pt-7 px-4 pb-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
           <div class="flex items-center space-x-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="font-bold text-slate-200">${state.investigatorId}</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="font-bold text-slate-200 tracking-wider">${state.investigatorId}</span>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700">CASE 0${state.currentCaseIndex + 1}/07</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">CASE 0${state.currentCaseIndex + 1}/07</span>
         </div>
 
-        <div class="flex-1 p-4 overflow-y-auto space-y-4">
-          ${renderMobileTabContent(state, currentCase)}
+        <div id="tab-content-container" class="flex-1 p-4 overflow-y-auto space-y-4">
+          ${mainBodyContent}
         </div>
 
-        <div class="bg-slate-900 border-t border-slate-800 p-2 grid grid-cols-4 gap-1 text-center font-mono text-[10px]">
-          <button onclick="setMobileTab('CASE')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'CASE' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-magnifying-glass mb-1"></i><span>CASE</span></button>
-          <button onclick="setMobileTab('CLUES')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'CLUES' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-barcode mb-1"></i><span>CLUES</span></button>
-          <button onclick="setMobileTab('MESSAGES')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'MESSAGES' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-comments mb-1"></i><span>CHAT</span></button>
-          <button onclick="setMobileTab('PROGRESS')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'PROGRESS' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-moon mb-1"></i><span>MOON</span></button>
-        </div>
-      `;
-    }
-
-    function renderMobileTabContent(state, currentCase) {
-      if (mobileTab === 'CLUES') {
-        return `
-          <div class="space-y-3 font-sans">
-            <h4 class="font-mono text-xs text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">EVIDENCE SCANNER LENS</h4>
-            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
-              <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 scanner-lens relative overflow-hidden" onmousemove="updateScannerLens(event, this)">
-                <p class="text-xs font-mono text-slate-400 leading-relaxed">${currentCase.clueSnippet}</p>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      if (state.currentCaseIndex === 3 && currentCase.isMiniGame) {
-        return `
-          <div class="space-y-4 font-sans py-2">
-            <div class="bg-red-950/60 p-4 rounded-2xl border border-red-800 text-center">
-              <h3 class="font-bold text-red-300 text-base">【技术组】信号频段失控！</h3>
-              <p class="text-xs text-slate-300">滑动滑块，频段匹配至 <strong class="text-moonGold">440 Hz</strong> 修复信号！</p>
-            </div>
-            <input type="range" min="100" max="800" value="200" class="w-full accent-moonGold" oninput="handleFrequencySlider(this.value)">
-            ${state.signalFrequencyTuned ? `<div class="p-3 bg-emerald-950 text-emerald-300 font-mono text-xs text-center">✓ 调频成功！</div>` : ''}
-          </div>
-        `;
-      }
-
-      return `
-        <div class="space-y-4 font-sans">
-          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
-            <h3 class="font-serif-sc font-bold text-base text-slate-100">${currentCase.question}</h3>
-          </div>
-          <div class="space-y-2.5">
-            ${currentCase.options.map(opt => `
-              <button onclick="submitParticipantVote('${opt.id}')" class="w-full p-4 rounded-2xl border text-left flex items-center justify-between ${state.myVote === opt.id ? 'bg-moonGold text-midnight font-bold' : 'bg-slate-900 border-slate-800 text-slate-200'}">
-                <span>${opt.id}.${opt.label}</span>
-              </button>
-            `).join('')}
-          </div>
+        <div class="bg-slate-900/95 backdrop-blur border-t border-slate-800 p-2 grid grid-cols-4 gap-1 text-center font-mono text-[10px] z-40">
+          <button onclick="setMobileTab('CASE')" class="p-2 rounded-2xl flex flex-col items-center transition ${mobileTab === 'CASE' && state.eventStatus !== 'RECRUITMENT' ? 'bg-moonGold text-midnight font-bold shadow-md' : 'text-slate-400 hover:text-slate-200'}"><i class="fa-solid fa-magnifying-glass mb-1 text-sm"></i><span>CASE</span></button>
+          <button onclick="setMobileTab('CLUES')" class="p-2 rounded-2xl flex flex-col items-center transition ${mobileTab === 'CLUES' ? 'bg-moonGold text-midnight font-bold shadow-md' : 'text-slate-400 hover:text-slate-200'}"><i class="fa-solid fa-barcode mb-1 text-sm"></i><span>CLUES</span></button>
+          <button onclick="setMobileTab('RECRUIT')" class="p-2 rounded-2xl flex flex-col items-center transition ${mobileTab === 'RECRUIT' || state.eventStatus === 'RECRUITMENT' ? 'bg-cyan-400 text-midnight font-bold shadow-md' : 'text-cyan-400 hover:text-cyan-300'}"><i class="fa-solid fa-user-plus mb-1 text-sm"></i><span>JOIN</span></button>
+          <button onclick="setMobileTab('PROGRESS')" class="p-2 rounded-2xl flex flex-col items-center transition ${mobileTab === 'PROGRESS' ? 'bg-moonGold text-midnight font-bold shadow-md' : 'text-slate-400 hover:text-slate-200'}"><i class="fa-solid fa-moon mb-1 text-sm"></i><span>STATUS</span></button>
         </div>
       `;
     }
@@ -166,6 +246,13 @@
       const rect = el.getBoundingClientRect();
       el.style.setProperty('--mouse-x', `${((e.clientX - rect.left) / rect.width) * 100}%`);
       el.style.setProperty('--mouse-y', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+    }
+
+    function updateScannerLensTouch(e, el) {
+      const touch = e.touches[0];
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--mouse-x', `${((touch.clientX - rect.left) / rect.width) * 100}%`);
+      el.style.setProperty('--mouse-y', `${((touch.clientY - rect.top) / rect.height) * 100}%`);
     }
 
     window.onload = renderParticipantView;

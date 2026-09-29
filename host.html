@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月缘 MOON WHISPERS - Host Command Center</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { midnight: '#02040a', moonGold: '#fbbf24' },
+          fontFamily: { mono: ['"JetBrains Mono"', 'monospace'], sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #02040a; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card { background: rgba(7, 15, 38, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+  </style>
+</head>
+<body class="h-full min-h-screen bg-midnight text-slate-100 p-4 sm:p-6 font-mono text-xs">
+
+  <main id="app-viewport" class="w-full max-w-5xl mx-auto space-y-6">
+    <!-- Fallback text while loading -->
+    <div class="glass-card p-6 rounded-3xl text-center text-slate-400">Loading Host Command Center...</div>
+  </main>
+
+  <script>
+    const CASE_DATA = [
+      { id: 1, dept: "宣传组" }, { id: 2, dept: "编辑组" }, { id: 3, dept: "礼仪组" },
+      { id: 4, dept: "技术组" }, { id: 5, dept: "节目组" }, { id: 6, dept: "分校与展览品组" }, { id: 7, dept: "Marketing" }
+    ];
+
+    const defaultState = {
+      eventStatus: 'WAITING',
+      currentCaseIndex: 0,
+      votes: { A: 0, B: 0, C: 0, D: 0 },
+      simulatedParticipants: 64,
+      isVotingOpen: false,
+      countdown: 20
+    };
+
+    class MoonStore {
+      constructor() {
+        try {
+          this.channel = new BroadcastChannel('moon_whispers_channel_v2');
+        } catch (e) {
+          console.warn("BroadcastChannel not supported in this context.");
+        }
+        this.state = this.loadState();
+        
+        if (this.channel) {
+          this.channel.onmessage = (event) => {
+            if (event.data && event.data.type === 'STATE_UPDATE') {
+              this.state = event.data.payload;
+              renderHostView();
+            }
+          };
+        }
+      }
+
+      loadState() {
+        try {
+          const saved = localStorage.getItem('moon_whispers_state_v2');
+          if (saved) return JSON.parse(saved);
+        } catch(e) {
+          console.error("Error reading localStorage:", e);
+        }
+        return { ...defaultState };
+      }
+
+      saveAndBroadcast() {
+        try {
+          localStorage.setItem('moon_whispers_state_v2', JSON.stringify(this.state));
+          if (this.channel) {
+            this.channel.postMessage({ type: 'STATE_UPDATE', payload: this.state });
+          }
+        } catch(e) {
+          console.error("Error saving state:", e);
+        }
+        renderHostView();
+      }
+
+      update(updater) {
+        updater(this.state);
+        this.saveAndBroadcast();
+      }
+
+      reset() {
+        this.state = { ...defaultState };
+        this.saveAndBroadcast();
+      }
+    }
+
+    let store;
+
+    function hostSetStatus(status) {
+      store.update(s => { s.eventStatus = status; });
+    }
+
+    function hostJumpToCase(index) {
+      store.update(s => {
+        s.currentCaseIndex = index;
+        s.votes = { A: 0, B: 0, C: 0, D: 0 };
+        s.eventStatus = index === 3 ? 'TECHNICAL_FAILURE' : 'CASE';
+      });
+    }
+
+    function hostSimulateVotes() {
+      store.update(s => {
+        s.votes = { A: 12, B: 45, C: 5, D: 2 };
+        s.eventStatus = 'LIVE_RESULT';
+      });
+    }
+
+    function renderHostView() {
+      const state = store.state;
+      const viewport = document.getElementById('app-viewport');
+      if (!viewport) return;
+
+      viewport.innerHTML = `
+        <div class="glass-card p-5 rounded-3xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-white">EVENT HOST COMMAND CENTER</h2>
+            <span class="text-slate-400">ORGANIZER CONTROL ROOM</span>
+          </div>
+          <button onclick="store.reset()" class="px-3.5 py-1.5 rounded-xl bg-red-950 border border-red-800 text-red-400 hover:bg-red-900 cursor-pointer">
+            <i class="fa-solid fa-rotate-left mr-1"></i> RESET SYSTEM
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="glass-card p-4 rounded-2xl"><span class="text-slate-500 block">CURRENT STATE</span><strong class="text-sm text-moonGold font-bold">${state.eventStatus}</strong></div>
+          <div class="glass-card p-4 rounded-2xl"><span class="text-slate-500 block">ACTIVE CASE</span><strong class="text-sm text-cyan-400 font-bold">CASE 0${state.currentCaseIndex + 1}</strong></div>
+          <div class="glass-card p-4 rounded-2xl"><span class="text-slate-500 block">PARTICIPANTS</span><strong class="text-sm text-white font-bold">${state.simulatedParticipants}</strong></div>
+          <div class="glass-card p-4 rounded-2xl"><span class="text-slate-500 block">TOTAL VOTES</span><strong class="text-sm text-emerald-400 font-bold">${Object.values(state.votes).reduce((a,b)=>a+b,0)}</strong></div>
+        </div>
+
+        <div class="glass-card p-6 rounded-3xl border border-slate-800 space-y-4">
+          <h3 class="font-bold text-sm text-slate-200 border-b border-slate-800 pb-3">STAGE CONTROL TRIGGERS</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button onclick="hostSetStatus('WAITING')" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 cursor-pointer">1. WAITING / QR</button>
+            <button onclick="hostSetStatus('INTRO')" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 cursor-pointer">2. INTRO & ALERT</button>
+            <button onclick="hostSetStatus('GROUP_CHAT')" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 cursor-pointer">3. GROUP CHAT</button>
+            <button onclick="hostSetStatus('CASE')" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 cursor-pointer">4. SHOW CASE BRIEF</button>
+            <button onclick="hostSetStatus('VOTING')" class="p-3.5 rounded-2xl bg-amber-950 border border-amber-600 text-amber-300 cursor-pointer">5. OPEN VOTING</button>
+            <button onclick="hostSimulateVotes()" class="p-3.5 rounded-2xl bg-cyan-950 border border-cyan-600 text-cyan-300 cursor-pointer">6. SIMULATE VOTES</button>
+            <button onclick="hostSetStatus('LIVE_RESULT')" class="p-3.5 rounded-2xl bg-emerald-950 border border-emerald-600 text-emerald-300 cursor-pointer">7. REVEAL RESULT</button>
+            <button onclick="hostSetStatus('UNLOCK')" class="p-3.5 rounded-2xl bg-purple-950 border border-purple-600 text-purple-300 cursor-pointer">8. UNLOCK DEPT</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="glass-card p-5 rounded-3xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-slate-300">JUMP TO CASE (1 - 7)</h4>
+            <div class="grid grid-cols-4 gap-2">
+              ${CASE_DATA.map((c, idx) => `
+                <button onclick="hostJumpToCase(${idx})" class="p-2.5 rounded-xl border ${idx === state.currentCaseIndex ? 'bg-moonGold text-midnight font-bold' : 'bg-slate-900 border-slate-800 text-slate-300'} cursor-pointer">
+                  CASE 0${idx + 1}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="glass-card p-5 rounded-3xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-slate-300">GRAND FINALE CONTROLS</h4>
+            <div class="flex items-center space-x-2">
+              <button onclick="hostSetStatus('FINAL_CASE')" class="flex-1 p-3 rounded-2xl bg-red-950 border border-red-800 text-red-300 font-bold cursor-pointer">FINAL CASE</button>
+              <button onclick="hostSetStatus('FINAL_REVEAL')" class="flex-1 p-3 rounded-2xl bg-amber-950 border border-amber-600 text-amber-300 font-bold cursor-pointer">FINAL REVEAL</button>
+              <button onclick="hostSetStatus('RECRUITMENT')" class="flex-1 p-3 rounded-2xl bg-cyan-950 border border-cyan-600 text-cyan-300 font-bold cursor-pointer">RECRUITMENT</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      store = new MoonStore();
+      renderHostView();
+    });
+  </script>
+</body>
+</html>

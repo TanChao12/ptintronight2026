@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月缘 MOON WHISPERS - Mobile Terminal</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Serif+SC:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { midnight: '#02040a', deepnavy: '#070f26', moonGold: '#fbbf24' },
+          fontFamily: { serifSC: ['"Noto Serif SC"', 'serif'], mono: ['"JetBrains Mono"', 'monospace'], sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #02040a; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; }
+    .scanner-lens { cursor: crosshair; background: radial-gradient(circle 70px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(251, 191, 36, 0.2) 0%, rgba(3, 7, 18, 0.95) 100%); }
+  </style>
+</head>
+<body class="h-full min-h-screen flex items-center justify-center bg-midnight text-slate-100 p-2">
+
+  <main id="app-viewport" class="w-full max-w-[390px] h-[780px] bg-slate-950 border-4 border-slate-800 rounded-[40px] shadow-2xl flex flex-col justify-between overflow-hidden relative font-sans"></main>
+
+  <script>
+    const CASE_DATA = [
+      { id: 1, code: "CASE-01", title: "宣传失陷", dept: "宣传组", question: "宣传出了问题。你认为应该先调查谁？", options: [{ id: "A", label: "Marketing 市场策划组" }, { id: "B", label: "宣传组 (Visual Storytellers)" }, { id: "C", label: "编辑组 (Editorial)" }, { id: "D", label: "技术组 (Technical)" }], clueSnippet: "【加密文案】海报原文件已被篡改！修改痕迹指向 Visual Department 账号权限！" },
+      { id: 2, code: "CASE-02", title: "特刊谜团", dept: "编辑组", question: "哪一项核心职责最可能属于这个部门？", options: [{ id: "A", label: "嘉宾接待与座位摆放" }, { id: "B", label: "特刊撰写与故事留存" }, { id: "C", label: "音响设备与舞台灯光" }, { id: "D", label: "节目演出与流程编排" }], clueSnippet: "【特刊日志】“每一段文字，都是把月光镌刻在纸上的艺术。”" },
+      { id: 3, code: "CASE-03", title: "礼仪危机", dept: "礼仪组", question: "面对嘉宾接待与座位紧急安排，谁来接管现场？", options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组 (Guest Relations)" }, { id: "C", label: "技术组" }, { id: "D", label: "Marketing" }], clueSnippet: "【礼仪手册】VIP 席位 01-12 已全数安排，礼仪接待人员到位率 100%。" },
+      { id: 4, code: "CASE-04", title: "信号中断", dept: "技术组", question: "舞台音响与大屏系统全面失灵，需要手动调频修复！", options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组" }, { id: "C", label: "技术组 (Technical Engineering)" }, { id: "D", label: "编辑组" }], clueSnippet: "【技术告警】音频采样率丢失！调频目标：440 Hz 同步。", isMiniGame: true },
+      { id: 5, code: "CASE-05", title: "节奏脫轨", dept: "节目组", question: "谁来掌握舞台上这掌控一切的节奏与灵魂？", options: [{ id: "A", label: "宣传组" }, { id: "B", label: "节目组 (Performance & Stage)" }, { id: "C", label: "分校与展览品组" }, { id: "D", label: "礼仪组" }], clueSnippet: "【节目单】开场舞《月之声》倒计时 30 秒，舞台灯光组就位！" },
+      { id: 6, code: "CASE-06", title: "分校迷局", dept: "分校与展览品组", question: "谁负责跨校区协调与文化展览品的完美呈现？", options: [{ id: "A", label: "分校与展览品组" }, { id: "B", label: "编辑组" }, { id: "C", label: "Marketing" }, { id: "D", label: "技术组" }], clueSnippet: "【展品清单】灯笼艺术雕塑与分校巡展专列已顺利发车。" },
+      { id: 7, code: "CASE-07", title: "核心品牌", dept: "Marketing", question: "谁负责统筹全局战略、品牌定位与核心价值？", options: [{ id: "A", label: "礼仪组" }, { id: "B", label: "Marketing 市场与品牌组" }, { id: "C", label: "技术组" }, { id: "D", label: "编辑组" }], clueSnippet: "【品牌口号】“月下同心，缘聚国大。”" }
+    ];
+
+    class MoonStore {
+      constructor() {
+        this.channel = new BroadcastChannel('moon_whispers_channel_v2');
+        this.state = this.loadState();
+        this.channel.onmessage = (event) => {
+          if (event.data && event.data.type === 'STATE_UPDATE') {
+            this.state = event.data.payload;
+            renderParticipantView();
+          }
+        };
+      }
+      loadState() {
+        const saved = localStorage.getItem('moon_whispers_state_v2');
+        if (saved) try { return JSON.parse(saved); } catch(e) {}
+        return { eventStatus: 'WAITING', currentCaseIndex: 0, votes: {}, investigatorId: "INV-" + Math.floor(1000 + Math.random() * 9000), myVote: null };
+      }
+      update(updater) {
+        updater(this.state);
+        localStorage.setItem('moon_whispers_state_v2', JSON.stringify(this.state));
+        this.channel.postMessage({ type: 'STATE_UPDATE', payload: this.state });
+        renderParticipantView();
+      }
+    }
+
+    const store = new MoonStore();
+    let mobileTab = 'CASE';
+
+    function setMobileTab(tab) {
+      mobileTab = tab;
+      renderParticipantView();
+    }
+
+    function submitParticipantVote(optionId) {
+      store.update(s => {
+        s.myVote = optionId;
+        s.votes[optionId] = (s.votes[optionId] || 0) + 1;
+      });
+    }
+
+    function handleFrequencySlider(val) {
+      if (Math.abs(val - 440) < 15) {
+        store.update(s => { s.signalFrequencyTuned = true; });
+      }
+    }
+
+    function renderParticipantView() {
+      const state = store.state;
+      const currentCase = CASE_DATA[state.currentCaseIndex];
+      const viewport = document.getElementById('app-viewport');
+
+      viewport.innerHTML = `
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-xl z-50"></div>
+        <div class="pt-7 px-4 pb-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="font-bold text-slate-200">${state.investigatorId}</span>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700">CASE 0${state.currentCaseIndex + 1}/07</span>
+        </div>
+
+        <div class="flex-1 p-4 overflow-y-auto space-y-4">
+          ${renderMobileTabContent(state, currentCase)}
+        </div>
+
+        <div class="bg-slate-900 border-t border-slate-800 p-2 grid grid-cols-4 gap-1 text-center font-mono text-[10px]">
+          <button onclick="setMobileTab('CASE')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'CASE' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-magnifying-glass mb-1"></i><span>CASE</span></button>
+          <button onclick="setMobileTab('CLUES')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'CLUES' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-barcode mb-1"></i><span>CLUES</span></button>
+          <button onclick="setMobileTab('MESSAGES')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'MESSAGES' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-comments mb-1"></i><span>CHAT</span></button>
+          <button onclick="setMobileTab('PROGRESS')" class="p-2 rounded-xl flex flex-col items-center ${mobileTab === 'PROGRESS' ? 'bg-moonGold text-midnight font-bold' : 'text-slate-400'}"><i class="fa-solid fa-moon mb-1"></i><span>MOON</span></button>
+        </div>
+      `;
+    }
+
+    function renderMobileTabContent(state, currentCase) {
+      if (mobileTab === 'CLUES') {
+        return `
+          <div class="space-y-3 font-sans">
+            <h4 class="font-mono text-xs text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">EVIDENCE SCANNER LENS</h4>
+            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+              <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 scanner-lens relative overflow-hidden" onmousemove="updateScannerLens(event, this)">
+                <p class="text-xs font-mono text-slate-400 leading-relaxed">${currentCase.clueSnippet}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (state.currentCaseIndex === 3 && currentCase.isMiniGame) {
+        return `
+          <div class="space-y-4 font-sans py-2">
+            <div class="bg-red-950/60 p-4 rounded-2xl border border-red-800 text-center">
+              <h3 class="font-bold text-red-300 text-base">【技术组】信号频段失控！</h3>
+              <p class="text-xs text-slate-300">滑动滑块，频段匹配至 <strong class="text-moonGold">440 Hz</strong> 修复信号！</p>
+            </div>
+            <input type="range" min="100" max="800" value="200" class="w-full accent-moonGold" oninput="handleFrequencySlider(this.value)">
+            ${state.signalFrequencyTuned ? `<div class="p-3 bg-emerald-950 text-emerald-300 font-mono text-xs text-center">✓ 调频成功！</div>` : ''}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="space-y-4 font-sans">
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
+            <h3 class="font-serif-sc font-bold text-base text-slate-100">${currentCase.question}</h3>
+          </div>
+          <div class="space-y-2.5">
+            ${currentCase.options.map(opt => `
+              <button onclick="submitParticipantVote('${opt.id}')" class="w-full p-4 rounded-2xl border text-left flex items-center justify-between ${state.myVote === opt.id ? 'bg-moonGold text-midnight font-bold' : 'bg-slate-900 border-slate-800 text-slate-200'}">
+                <span>${opt.id}.${opt.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateScannerLens(e, el) {
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--mouse-x', `${((e.clientX - rect.left) / rect.width) * 100}%`);
+      el.style.setProperty('--mouse-y', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+    }
+
+    window.onload = renderParticipantView;
+  </script>
+</body>
+</html>

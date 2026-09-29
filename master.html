@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月缘 MOON WHISPERS - Master Display Screen</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Serif+SC:wght@300;400;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            midnight: '#02040a',
+            deepnavy: '#070f26',
+            moonGold: '#fbbf24',
+            goldGlow: '#f59e0b',
+            cyanGlow: '#06b6d4',
+            cyberRed: '#ef4444',
+            emeraldGlow: '#10b981'
+          },
+          fontFamily: {
+            serifSC: ['"Noto Serif SC"', 'serif'],
+            cinzel: ['"Cinzel"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #02040a;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .font-serif-sc { font-family: 'Noto Serif SC', serif; }
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(2, 4, 10, 0.9); }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, #fbbf24, #06b6d4); border-radius: 4px; }
+
+    .moon-glow-large {
+      box-shadow: 0 0 90px 20px rgba(251, 191, 36, 0.22), 0 0 160px 50px rgba(6, 182, 212, 0.15);
+    }
+    .text-gold-gradient {
+      background: linear-gradient(135deg, #ffffff 0%, #fef08a 25%, #fbbf24 60%, #b45309 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass-card {
+      background: rgba(7, 15, 38, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      transition: border-color 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(251, 191, 36, 0.35);
+      box-shadow: 0 25px 60px rgba(251, 191, 36, 0.08);
+    }
+
+    #cursor-dot {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background-color: #fbbf24;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+    }
+    #cursor-ring {
+      position: fixed;
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s ease-out;
+    }
+
+    @keyframes glitch-anim {
+      0% { transform: translate(0) skew(0deg); }
+      20% { transform: translate(-4px, 2px) skew(-2deg); filter: hue-rotate(90deg); }
+      40% { transform: translate(4px, -2px) skew(2deg); filter: hue-rotate(180deg); }
+      60% { transform: translate(-3px, -1px) skew(-1deg); }
+      80% { transform: translate(3px, 3px) skew(1deg); }
+      100% { transform: translate(0) skew(0deg); }
+    }
+    .glitch-mode { animation: glitch-anim 0.25s infinite; }
+  </style>
+</head>
+<body class="h-full min-h-screen flex flex-col bg-midnight text-slate-100 antialiased selection:bg-moonGold selection:text-midnight">
+
+  <div id="cursor-dot" class="hidden md:block"></div>
+  <div id="cursor-ring" class="hidden md:block"></div>
+
+  <header id="top-nav" class="sticky top-0 z-50 bg-midnight/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-xs font-mono">
+    <div class="flex items-center space-x-3">
+      <div class="relative flex items-center justify-center">
+        <span class="w-2.5 h-2.5 rounded-full bg-moonGold animate-ping absolute"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-moonGold relative"></span>
+      </div>
+      <span class="font-serif-sc font-bold tracking-widest text-moonGold text-sm">月缘 MOON WHISPERS [MASTER]</span>
+      <span class="hidden md:inline text-slate-600">|</span>
+      <span class="hidden md:inline text-slate-400" id="live-status-pill">STATUS: INITIALIZING</span>
+    </div>
+
+    <div class="flex items-center space-x-2">
+      <button onclick="toggleAudio()" id="btn-audio-toggle" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-moonGold transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-volume-high text-xs" id="audio-icon"></i>
+        <span id="audio-label" class="hidden sm:inline">SOUND ON</span>
+      </button>
+    </div>
+  </header>
+
+  <canvas id="star-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <main id="app-viewport" class="relative z-10 flex-1 flex flex-col items-center justify-center p-2 sm:p-6 overflow-x-hidden"></main>
+
+  <footer id="bottom-ticker" class="relative z-10 bg-midnight/90 border-t border-slate-900 px-4 py-1.5 text-[11px] font-mono text-slate-500 flex items-center justify-between overflow-hidden">
+    <div class="flex items-center space-x-2 shrink-0">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+      <span class="text-cyan-400 font-bold">LIVE ACTIVITY STREAM:</span>
+    </div>
+    <div class="overflow-hidden whitespace-nowrap ml-4 flex-1">
+      <p id="ticker-text" class="inline-block animate-marquee text-slate-400">
+        系统已连接 • 全体调查员就位 • 请注意大屏幕案情实时播报 • UKM PESTA TANGLUNG KE-47 •
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const CASE_DATA = [
+      {
+        id: 1, code: "CASE-01", title: "宣传失陷 (Marketing Anomaly)", dept: "宣传组", deptEng: "VISUAL STORYTELLERS", tags: ["POSTER", "SOCIAL MEDIA", "PHOTOGRAPHY", "VIDEO"],
+        situation: "中秋晚会前夕，宣发流量突然暴跌90%，预告海报与媒体推送文件遭到篡改。哪一个部门最该优先开展调查？",
+        question: "宣传出了问题。你认为应该先调查谁？",
+        options: [{ id: "A", label: "Marketing 市场策划组" }, { id: "B", label: "宣传组 (Visual Storytellers)" }, { id: "C", label: "编辑组 (Editorial)" }, { id: "D", label: "技术组 (Technical)" }],
+        correctAnswer: "B", revealDesc: "我们负责让一场活动，被更多人看见。用视觉与镜头，定格月光下最美的瞬间。"
+      },
+      {
+        id: 2, code: "CASE-02", title: "特刊谜团 (Editorial Riddle)", dept: "编辑组", deptEng: "STORIES & JOURNALISM", tags: ["特刊", "文案", "报道", "纪念册"],
+        situation: "系统中发现一份匿名加密文档：`特刊_final_v6_REAL_final_真的final.pdf`。里面记录着晚会的隐藏故事。",
+        question: "哪一项核心职责最可能属于这个部门？",
+        options: [{ id: "A", label: "嘉宾接待与座位摆放" }, { id: "B", label: "特刊撰写与故事留存" }, { id: "C", label: "音响设备与舞台灯光" }, { id: "D", label: "节目演出与流程编排" }],
+        correctAnswer: "B", revealDesc: "文字是有温度的。编辑组的使命，是把今晚发生的故事与感动，完整地留下来。"
+      },
+      {
+        id: 3, code: "CASE-03", title: "礼仪危机 (Protocol Crisis)", dept: "礼仪组", deptEng: "GUEST RELATIONS & PROTOCOL", tags: ["接待", "座位表", "流程", "协调"],
+        situation: "重要嘉宾已提前抵达会场入口，但后台的VIP seating map（座位表）突然神秘失踪！",
+        question: "面对嘉宾接待与座位紧急安排，谁来接管现场？",
+        options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组 (Guest Relations)" }, { id: "C", label: "技术组" }, { id: "D", label: "Marketing" }],
+        correctAnswer: "B", revealDesc: "优雅应变，宾至如归。我们以最高规格的礼仪，连接每一位步入月光下的客人。"
+      },
+      {
+        id: 4, code: "CASE-04", title: "信号中断 (Technical Interruption)", dept: "技术组", deptEng: "TECHNICAL & STAGE ENGINEERING", tags: ["AUDIO", "LIGHTING", "SCREEN CONTROL", "SYSTEM"],
+        situation: "【系统告警】主屏幕突然陷入黑暗！麦克风传出刺耳杂音：“喂？可以听到吗？信号断了！”",
+        question: "舞台音响与大屏系统全面失灵，需要手动调频修复！",
+        options: [{ id: "A", label: "节目组" }, { id: "B", label: "礼仪组" }, { id: "C", label: "技术组 (Technical Engineering)" }, { id: "D", label: "编辑组" }],
+        correctAnswer: "C", revealDesc: "WHEN EVERYTHING WORKS, YOU MAY NEVER NOTICE US. 当一切顺畅无阻，便是我们最好的存在。"
+      },
+      {
+        id: 5, code: "CASE-05", title: "节奏脫轨 (Programme Out of Control)", dept: "节目组", deptEng: "PERFORMANCE & STAGE FLOW", tags: ["FLOW", "STAGE", "ENERGY", "PERFORMANCE"],
+        situation: "观众已全数入座，舞台灯光聚焦，但后台控制台显示：PROGRAMME STATUS 仅 2/7 项确认，流程面临严重脱节！",
+        question: "谁来掌握舞台上这掌控一切的节奏与灵魂？",
+        options: [{ id: "A", label: "宣传组" }, { id: "B", label: "节目组 (Performance & Stage)" }, { id: "C", label: "分校与展览品组" }, { id: "D", label: "礼仪组" }],
+        correctAnswer: "B", revealDesc: "舞台上的每一秒，都是精准的艺术。我们掌控情绪与节奏，点燃整场晚会的灵魂。"
+      },
+      {
+        id: 6, code: "CASE-06", title: "分校迷局 (Branch & Exhibition Nodes)", dept: "分校与展览品组", deptEng: "BRANCH & EXHIBITION CULTURE", tags: ["LOCATION NODES", "EXHIBITIONS", "ARTIFACTS", "MAP"],
+        situation: "活动物资需要紧急调配运送往分校，同时主会场的文化展览品尚未完成最终摆设与解说。",
+        question: "谁负责跨校区协调与文化展览品的完美呈现？",
+        options: [{ id: "A", label: "分校与展览品组" }, { id: "B", label: "编辑组" }, { id: "C", label: "Marketing" }, { id: "D", label: "技术组" }],
+        correctAnswer: "A", revealDesc: "跨越空间的限制，将中秋文化的种子与艺术展览品，延伸至校园的每一个角落。"
+      },
+      {
+        id: 7, code: "CASE-07", title: "核心品牌 (Brand & Purpose)", dept: "Marketing", deptEng: "STRATEGY & IDENTITY", tags: ["STRATEGY", "MESSAGE", "AUDIENCE", "IDENTITY"],
+        situation: "所有细节看似就绪，但大家突然陷入困惑：“所以... 我们今晚究竟要向整个大学传递怎样的内核与品牌声量？”",
+        question: "谁负责统筹全局战略、品牌定位与核心价值？",
+        options: [{ id: "A", label: "礼仪组" }, { id: "B", label: "Marketing 市场与品牌组" }, { id: "C", label: "技术组" }, { id: "D", label: "编辑组" }],
+        correctAnswer: "B", revealDesc: "赋能品牌的灵魂，让活动的声音传播得更远，让每个人深刻记住【月缘】。"
+      }
+    ];
+
+    const defaultState = {
+      eventStatus: 'WAITING',
+      currentCaseIndex: 0,
+      unlockedDepartments: [],
+      votes: { A: 0, B: 0, C: 0, D: 0 },
+      simulatedParticipants: 64,
+      votedCount: 0,
+      isVotingOpen: false,
+      countdown: 20
+    };
+
+    class MoonStore {
+      constructor() {
+        this.channel = new BroadcastChannel('moon_whispers_channel_v2');
+        this.state = this.loadState();
+        
+        this.channel.onmessage = (event) => {
+          if (event.data && event.data.type === 'STATE_UPDATE') {
+            this.state = event.data.payload;
+            this.onStateChanged();
+          }
+        };
+
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'moon_whispers_state_v2') {
+            this.state = JSON.parse(e.newValue);
+            this.onStateChanged();
+          }
+        });
+      }
+
+      loadState() {
+        const saved = localStorage.getItem('moon_whispers_state_v2');
+        if (saved) {
+          try { return JSON.parse(saved); } catch(e) {}
+        }
+        return { ...defaultState };
+      }
+
+      onStateChanged() {
+        const pill = document.getElementById('live-status-pill');
+        if (pill) {
+          pill.innerText = `STATUS: ${this.state.eventStatus} (CASE 0${this.state.currentCaseIndex + 1})`;
+        }
+        renderCurrentView();
+      }
+    }
+
+    const store = new MoonStore();
+
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+      playToneFreq(freq) {
+        if (this.muted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+      }
+      playGlitch() {
+        if (this.muted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+      }
+    }
+    const sound = new SoundEngine();
+
+    function toggleAudio() {
+      const isMuted = sound.toggleMute();
+      const icon = document.getElementById('audio-icon');
+      const label = document.getElementById('audio-label');
+      if (isMuted) {
+        if (icon) icon.className = "fa-solid fa-volume-xmark text-xs text-red-400";
+        if (label) label.innerText = "MUTED";
+      } else {
+        if (icon) icon.className = "fa-solid fa-volume-high text-xs text-moonGold";
+        if (label) label.innerText = "SOUND ON";
+      }
+    }
+
+    function renderMasterView() {
+      const state = store.state;
+      const currentCase = CASE_DATA[state.currentCaseIndex];
+      let innerContent = "";
+
+      switch (state.eventStatus) {
+        case 'WAITING':
+          const playUrl = window.location.href.replace('master.html', 'play.html');
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-8 max-w-5xl mx-auto py-8 transition-all">
+              <div class="relative flex items-center justify-center group cursor-pointer">
+                <div class="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-amber-500/30 via-moonGold/50 to-cyan-400/20 moon-glow-large flex items-center justify-center border border-moonGold/40 transition duration-700 transform group-hover:scale-105">
+                  <div class="text-center px-4">
+                    <span class="block font-serif-sc text-6xl sm:text-8xl font-bold text-gold-gradient tracking-widest drop-shadow-2xl">月缘</span>
+                    <span class="block font-cinzel text-xs sm:text-sm text-cyan-300 tracking-[0.5em] mt-3 uppercase">MOON WHISPERS</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <span class="px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400 font-mono text-xs tracking-widest">SEKRETARIAT PESTA TANGLUNG UKM KE-47</span>
+                <h1 class="text-3xl sm:text-5xl font-serif-sc font-light text-slate-100 tracking-wide">大型中秋沉浸式案情推理体验</h1>
+              </div>
+
+              <div class="glass-card p-6 rounded-3xl flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 border-gold-glow">
+                <div class="bg-white p-3 rounded-2xl shadow-2xl relative group">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playUrl)}" alt="Scan QR" class="w-28 h-28 sm:w-36 sm:h-36">
+                </div>
+                <div class="text-left space-y-2">
+                  <span class="inline-block px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-mono animate-pulse">
+                    <i class="fa-solid fa-wifi mr-1"></i> LIVE NETWORK ACTIVE
+                  </span>
+                  <h3 class="text-xl sm:text-2xl font-bold font-mono text-white">SCAN TO JOIN TERMINAL</h3>
+                  <p class="text-xs text-slate-400 max-w-sm">请全场同学用手机扫描二维码，进入【月缘】侦探加密系统。</p>
+                  <div class="pt-2 flex items-center space-x-3 text-moonGold font-mono text-sm">
+                    <i class="fa-solid fa-users text-base"></i>
+                    <span>CONNECTED INVESTIGATORS: <strong class="text-white text-lg font-bold participant-count-disp">${state.simulatedParticipants}</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          break;
+
+        case 'INTRO':
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-8 max-w-3xl mx-auto py-12 animate-fade-in">
+              <div class="space-y-4">
+                <span class="text-cyan-400 font-mono text-xs tracking-widest uppercase">PROLOGUE // 序章</span>
+                <h2 class="text-3xl sm:text-5xl font-serif-sc font-light leading-relaxed text-slate-100">“所有的相遇，都是久别重逢。”</h2>
+                <p class="text-slate-400 text-sm font-light">Every story begins with a subtle whisper under the moonlight.</p>
+              </div>
+
+              <div class="glass-card p-8 rounded-3xl border border-red-500/50 text-left space-y-4 max-w-xl w-full shadow-2xl">
+                <div class="flex items-center justify-between border-b border-red-500/30 pb-3">
+                  <div class="flex items-center space-x-2 text-red-400 font-mono text-sm">
+                    <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+                    <span class="font-bold">SYSTEM ALERT: ANOMALY DETECTED</span>
+                  </div>
+                  <span class="text-xs font-mono text-slate-500">SYS_CODE: 071</span>
+                </div>
+                <p class="text-sm font-mono text-slate-300 leading-relaxed">[SYSTEM LOG]: 中秋筹备系统遭到未知干扰。晚会七大组别筹备资料出现多重异常！</p>
+                <div class="p-4 bg-red-950/40 border border-red-900/80 rounded-2xl text-xs font-mono text-red-300">
+                  PROJECT 071 INVESTIGATION PROTOCOL ACTIVATED.<br>请全场调查员准备进入案情侦破状态...
+                </div>
+              </div>
+            </div>
+          `;
+          break;
+
+        case 'GROUP_CHAT':
+          innerContent = `
+            <div class="w-full max-w-4xl mx-auto space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-3">
+                  <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+                  <h2 class="text-xl font-serif-sc font-bold text-slate-100">【月缘 · 活动筹备工作群】实况监听</h2>
+                </div>
+                <span class="font-mono text-xs text-slate-400">STATUS: INTERCEPTING LOGS</span>
+              </div>
+
+              <div class="glass-card rounded-3xl p-6 h-[460px] overflow-y-auto space-y-6 border border-slate-800 font-sans shadow-2xl relative" id="master-chat-box">
+                <div class="chat-sys-msg text-center font-mono text-[10px] text-cyan-500 tracking-[0.2em] opacity-0">[SYSTEM: SECURE CONNECTION ESTABLISHED]</div>
+                <div class="chat-msg-row flex items-start space-x-4 opacity-0 translate-y-6">
+                  <div class="w-10 h-10 rounded-full bg-amber-600/30 border border-amber-500 flex items-center justify-center text-amber-300 text-xs font-bold shrink-0">MKT</div>
+                  <div class="flex-1">
+                    <span class="text-xs font-bold text-amber-300">Marketing 组长</span>
+                    <div class="mt-1.5 bg-slate-800/80 p-4 rounded-2xl text-sm text-slate-200 border border-slate-700/50">大家在吗？宣发数据突然断崖式下滑，预告页面被改掉了！</div>
+                  </div>
+                </div>
+                <div class="chat-msg-row flex items-start space-x-4 opacity-0 translate-y-6">
+                  <div class="w-10 h-10 rounded-full bg-cyan-600/30 border border-cyan-500 flex items-center justify-center text-cyan-300 text-xs font-bold shrink-0">宣</div>
+                  <div class="flex-1">
+                    <span class="text-xs font-bold text-cyan-300">宣传组</span>
+                    <div class="mt-1.5 bg-slate-800/80 p-4 rounded-2xl text-sm text-slate-200 border border-slate-700/50">在！刚才海报文件链接全失效了，是谁改了权限？</div>
+                  </div>
+                </div>
+                <div class="chat-msg-row flex items-start space-x-4 opacity-0 translate-y-6">
+                  <div class="w-10 h-10 rounded-full bg-purple-600/30 border border-purple-500 flex items-center justify-center text-purple-300 text-xs font-bold shrink-0">节</div>
+                  <div class="flex-1">
+                    <span class="text-xs font-bold text-purple-300">节目组</span>
+                    <div class="mt-1.5 bg-slate-800/80 p-4 rounded-2xl text-sm text-slate-200 border border-slate-700/50">等等！节目单版本好像也被替换成旧版了，彩排流程对不上！</div>
+                  </div>
+                </div>
+                <div class="chat-msg-row flex items-start space-x-4 opacity-0 translate-y-6">
+                  <div class="w-10 h-10 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-red-300 text-xs font-bold shrink-0">技</div>
+                  <div class="flex-1">
+                    <span class="text-xs font-bold text-red-300">技术组</span>
+                    <div class="mt-1.5 bg-slate-800/80 p-4 rounded-2xl text-sm text-slate-200 border border-slate-700/50">是谁把最终版 PPT 和音效控制库误删了？！</div>
+                  </div>
+                </div>
+                <div class="chat-alert-box p-4 mt-6 bg-red-950/60 border border-red-500/50 rounded-2xl text-center text-red-300 font-mono text-xs opacity-0 scale-95">
+                  <i class="fa-solid fa-triangle-exclamation mr-1 animate-pulse"></i> SYSTEM: MULTIPLE ANOMALIES CONFIRMED. INITIALIZING INVESTIGATION...
+                </div>
+              </div>
+            </div>
+          `;
+          break;
+
+        case 'CASE':
+        case 'VOTING':
+        case 'LIVE_RESULT':
+          innerContent = renderMasterCaseSection(state, currentCase);
+          break;
+
+        case 'TECHNICAL_FAILURE':
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-6 max-w-2xl mx-auto py-12 glitch-mode">
+              <div class="text-red-500 text-7xl"><i class="fa-solid fa-tower-cell animate-pulse"></i></div>
+              <div class="space-y-2">
+                <span class="px-3 py-1 bg-red-950 text-red-400 border border-red-800 font-mono text-xs rounded-full">CRITICAL SIGNAL INTERRUPTION // CASE 04</span>
+                <h1 class="text-3xl sm:text-5xl font-mono font-bold text-red-400 tracking-wider">MICROPHONE & SIGNAL LOST</h1>
+                <p class="text-lg font-serif-sc text-slate-200">“喂？喂？现场音响失灵... 听得到我说话吗？！”</p>
+              </div>
+            </div>
+          `;
+          break;
+
+        case 'UNLOCK':
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-8 max-w-3xl mx-auto py-12 animate-fade-in">
+              <span class="px-4 py-1.5 rounded-full bg-moonGold/20 border border-moonGold text-moonGold font-mono text-xs tracking-widest uppercase">
+                <i class="fa-solid fa-lock-open mr-2"></i>DEPARTMENT DOSSIER UNLOCKED
+              </span>
+              <div class="w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-gradient-to-tr from-amber-500/30 via-moonGold/50 to-cyan-400/30 moon-glow-large flex items-center justify-center border-2 border-moonGold">
+                <div class="text-center px-4">
+                  <i class="fa-solid fa-award text-4xl text-moonGold mb-2"></i>
+                  <h2 class="text-3xl sm:text-5xl font-serif-sc font-bold text-white">${currentCase.dept}</h2>
+                  <span class="block text-xs font-mono text-cyan-300 tracking-widest mt-2">${currentCase.deptEng}</span>
+                </div>
+              </div>
+              <p class="text-xl sm:text-2xl font-serif-sc text-slate-100 italic max-w-xl">“${currentCase.revealDesc}”</p>
+            </div>
+          `;
+          break;
+
+        case 'FINAL_CASE':
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-8 max-w-3xl mx-auto py-12 animate-fade-in">
+              <span class="px-4 py-1 rounded-full bg-red-950 border border-red-500/50 text-red-400 font-mono text-xs tracking-widest">FINAL REVEAL // 终局推理</span>
+              <h1 class="text-3xl sm:text-5xl font-serif-sc font-bold text-gold-gradient">“到底是谁导致了这场中秋筹备风波？”</h1>
+              <p class="text-sm text-slate-200 font-serif-sc">经过前六轮的调查，七大部门的线索已拼接完成。请全场调查员做出最终判断。</p>
+            </div>
+          `;
+          break;
+
+        case 'FINAL_REVEAL':
+          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-8 max-w-4xl mx-auto py-6 animate-fade-in">
+              <div class="relative w-full h-72 sm:h-96 flex items-center justify-center">
+                <div class="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-moonGold/20 moon-glow-large border border-moonGold/40 animate-pulse"></div>
+                <div class="relative z-10 w-32 h-32 sm:w-44 sm:h-44 rounded-full bg-gradient-to-br from-amber-200 via-moonGold to-amber-600 flex flex-col items-center justify-center text-midnight font-bold shadow-2xl">
+                  <span class="font-serif-sc text-3xl sm:text-4xl">月缘</span>
+                </div>
+              </div>
+              <h2 class="text-2xl sm:text-4xl font-serif-sc font-light text-slate-100 leading-relaxed">
+                “一场活动之所以完美，从来不是因为某一个人的努力。<br>而是因为每个人，都在自己的位置上，让月亮升起来。”
+              </h2>
+            </div>
+          `;
+          break;
+
+        case 'RECRUITMENT':
+          innerContent = `
+            <div class="flex flex-col items-center justify-center text-center space-y-6 max-w-5xl mx-auto py-6 animate-fade-in">
+              <span class="px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono text-xs">JOIN THE FAMILY // 招新开启</span>
+              <h1 class="text-3xl sm:text-5xl font-serif-sc font-bold text-gold-gradient">加入马来西亚国立大学第47届中秋文娱晚会</h1>
+            </div>
+          `;
+          break;
+      }
+
+      return `
+        <div class="w-full min-h-[80vh] grid grid-rows-[auto_1fr_auto] p-4 sm:p-8 relative">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4 relative z-10">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-2xl bg-moonGold/20 border border-moonGold flex items-center justify-center text-moonGold font-serif-sc text-base font-bold">月</div>
+              <div><h3 class="font-serif-sc text-base font-bold text-slate-100">月缘 MOON WHISPERS</h3></div>
+            </div>
+            <div class="flex items-center space-x-1.5 sm:space-x-2">
+              ${CASE_DATA.map((c, idx) => `
+                <div class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border ${idx <= state.currentCaseIndex && state.eventStatus !== 'WAITING' ? 'bg-moonGold border-amber-200 text-midnight font-bold' : 'bg-slate-900 border-slate-800 text-slate-600'} flex items-center justify-center text-[9px] font-mono">
+                  ${idx + 1}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="flex items-center justify-center relative z-10">${innerContent}</div>
+        </div>
+      `;
+    }
+
+    function renderMasterCaseSection(state, currentCase) {
+      const totalVotes = Object.values(state.votes).reduce((a, b) => a + b, 0) || 1;
+      return `
+        <div class="w-full max-w-4xl mx-auto space-y-6 animate-fade-in">
+          <div class="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4 relative">
+            <span class="px-3.5 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800 text-xs font-mono">${currentCase.code} // ${currentCase.title}</span>
+            <h2 class="text-2xl sm:text-4xl font-serif-sc font-bold text-slate-100">${currentCase.question}</h2>
+            <p class="text-sm sm:text-base text-slate-300 leading-relaxed">${currentCase.situation}</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            ${currentCase.options.map(opt => {
+              const count = state.votes[opt.id] || 0;
+              const pct = Math.round((count / totalVotes) * 100);
+              const isCorrect = state.eventStatus === 'LIVE_RESULT' && opt.id === currentCase.correctAnswer;
+              return `
+                <div class="glass-card p-5 rounded-2xl border ${isCorrect ? 'border-moonGold bg-amber-950/30' : 'border-slate-800'} relative overflow-hidden">
+                  <div class="absolute left-0 top-0 bottom-0 ${isCorrect ? 'bg-moonGold/30' : 'bg-slate-800/60'} transition-all duration-700" style="width: ${pct}%"></div>
+                  <div class="relative z-10 flex items-center justify-between">
+                    <span class="font-sans text-sm sm:text-base font-semibold text-slate-200">${opt.id}.${opt.label}</span>
+                    <span class="text-lg font-bold font-mono ${isCorrect ? 'text-moonGold' : 'text-slate-300'}">${pct}%</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    let lastRenderKey = '';
+
+    function runPostRenderAnimations() {
+      const state = store.state;
+      if (state.eventStatus === 'GROUP_CHAT') {
+        const sysMsg = document.querySelector('.chat-sys-msg');
+        const messages = document.querySelectorAll('.chat-msg-row');
+        const alertBox = document.querySelector('.chat-alert-box');
+        const tl = gsap.timeline();
+        if (sysMsg) tl.to(sysMsg, { opacity: 1, duration: 0.8 }, "+=0.2");
+        messages.forEach((msg) => {
+          tl.to(msg, {
+            opacity: 1, y: 0, duration: 0.7,
+            onStart: () => {
+              sound.playToneFreq(600 + (Math.random() * 300));
+              const chatBox = document.getElementById('master-chat-box');
+              if (chatBox) chatBox.scrollTop = chatBox.scrollHeight + 100;
+            }
+          }, `+=${0.7 + Math.random() * 1.5}`);
+        });
+        if (alertBox) tl.to(alertBox, { opacity: 1, scale: 1, duration: 0.6, onStart: () => sound.playGlitch() }, "+=1.5");
+      }
+    }
+
+    function renderCurrentView() {
+      const state = store.state;
+      const currentKey = `${state.eventStatus}-${state.currentCaseIndex}`;
+      const viewport = document.getElementById('app-viewport');
+      if (!viewport) return;
+
+      const newHTML = renderMasterView();
+
+      if (lastRenderKey !== currentKey) {
+        viewport.innerHTML = `<div id="transition-wrapper" class="w-full h-full flex flex-col justify-center opacity-0 translate-y-8">${newHTML}</div>`;
+        gsap.to('#transition-wrapper', { opacity: 1, y: 0, duration: 0.8, ease: "expo.out", onComplete: runPostRenderAnimations });
+        lastRenderKey = currentKey;
+      } else {
+        const wrapper = document.getElementById('transition-wrapper');
+        if (wrapper && state.eventStatus !== 'GROUP_CHAT') wrapper.innerHTML = newHTML;
+      }
+    }
+
+    window.onload = function() {
+      const canvas = document.getElementById('star-canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        const stars = Array(120).fill(0).map(() => ({ x: Math.random() * width, y: Math.random() * height, radius: Math.random() * 1.8, alpha: Math.random(), speed: 0.01 }));
+        function draw() {
+          ctx.clearRect(0, 0, width, height);
+          stars.forEach(s => {
+            s.alpha += s.speed;
+            if (s.alpha > 1 || s.alpha < 0) s.speed = -s.speed;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(248, 250, 252, ${Math.abs(s.alpha)})`;
+            ctx.fill();
+          });
+          requestAnimationFrame(draw);
+        }
+        draw();
+      }
+      renderCurrentView();
+    };
+  </script>
+</body>
+</html>

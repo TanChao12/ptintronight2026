@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/", "destination": "/master.html" },
+    { "source": "/master", "destination": "/master.html" },
+    { "source": "/play", "destination": "/play.html" },
+    { "source": "/host", "destination": "/host.html" }
+  ]
+}
